@@ -1,68 +1,111 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
-import { User } from "@/types";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { User, Session } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
 interface AuthContextType {
   user: User | null;
+  session: Session | null;
   isAuthenticated: boolean;
+  isAdmin: boolean;
+  isLoading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   register: (name: string, email: string, password: string) => Promise<boolean>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock user database
-const mockUsers: Map<string, { user: User; password: string }> = new Map();
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const login = useCallback(async (email: string, password: string) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 800));
+  const checkAdminRole = useCallback(async (userId: string) => {
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
     
-    const userData = mockUsers.get(email);
-    if (userData && userData.password === password) {
-      setUser(userData.user);
-      toast({
-        title: "Welcome back!",
-        description: `Logged in as ${userData.user.name}`,
-      });
-      return true;
-    }
-    
-    toast({
-      title: "Login failed",
-      description: "Invalid email or password",
-      variant: "destructive",
-    });
-    return false;
+    setIsAdmin(!!data);
   }, []);
 
-  const register = useCallback(async (name: string, email: string, password: string) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    
-    if (mockUsers.has(email)) {
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          setTimeout(() => {
+            checkAdminRole(session.user.id);
+          }, 0);
+        } else {
+          setIsAdmin(false);
+        }
+      }
+    );
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        checkAdminRole(session.user.id);
+      }
+      setIsLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [checkAdminRole]);
+
+  const login = useCallback(async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
       toast({
-        title: "Registration failed",
-        description: "Email already exists",
+        title: "Login failed",
+        description: error.message,
         variant: "destructive",
       });
       return false;
     }
 
-    const newUser: User = {
-      id: crypto.randomUUID(),
-      email,
-      name,
-      role: "USER",
-    };
+    toast({
+      title: "Welcome back!",
+      description: "You have been logged in successfully",
+    });
+    return true;
+  }, []);
 
-    mockUsers.set(email, { user: newUser, password });
-    setUser(newUser);
+  const register = useCallback(async (name: string, email: string, password: string) => {
+    const redirectUrl = `${window.location.origin}/`;
     
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: redirectUrl,
+        data: {
+          name,
+        },
+      },
+    });
+
+    if (error) {
+      toast({
+        title: "Registration failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      return false;
+    }
+
     toast({
       title: "Welcome!",
       description: "Your account has been created successfully",
@@ -70,8 +113,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return true;
   }, []);
 
-  const logout = useCallback(() => {
-    setUser(null);
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut();
+    setIsAdmin(false);
     toast({
       title: "Logged out",
       description: "See you soon!",
@@ -82,7 +126,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
+        session,
         isAuthenticated: !!user,
+        isAdmin,
+        isLoading,
         login,
         register,
         logout,
