@@ -23,9 +23,7 @@ const Index = () => {
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 animate-fade-in" style={{
           animationDelay: "100ms"
-        }}>
-            Discover our curated collection of premium, eco-friendly products designed for modern living.
-          </p>
+        }}>Your one time stop for affordable wears.</p>
           <div className="relative max-w-md mx-auto animate-fade-in" style={{
           animationDelay: "200ms"
         }}>
