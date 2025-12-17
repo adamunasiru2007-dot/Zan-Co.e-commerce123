@@ -24,7 +24,7 @@ export default function Checkout() {
   // Form state
   const [formData, setFormData] = useState({
     email: user?.email || "",
-    name: user?.user_metadata?.name || "",
+    name: user?.name || "",
     address: "",
     city: "",
     zipCode: "",
