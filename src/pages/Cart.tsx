@@ -7,12 +7,16 @@ import { Separator } from "@/components/ui/separator";
 import { CartItem } from "@/components/cart/CartItem";
 import { useCart } from "@/contexts/CartContext";
 
+const formatPrice = (price: number) => {
+  return new Intl.NumberFormat("en-NG").format(price);
+};
+
 export default function Cart() {
   const { items, totalItems, totalPrice, clearCart } = useCart();
 
-  const shipping = totalPrice > 50 ? 0 : 4.99;
-  const tax = totalPrice * 0.08;
-  const orderTotal = totalPrice + shipping + tax;
+  const freeShippingThreshold = 30000;
+  const shipping = totalPrice > freeShippingThreshold ? 0 : 2500;
+  const orderTotal = totalPrice + shipping;
 
   if (items.length === 0) {
     return (
@@ -25,7 +29,7 @@ export default function Cart() {
               Looks like you haven't added any items to your cart yet.
             </p>
             <Link to="/">
-              <Button size="lg" className="gap-2">
+              <Button size="lg" className="gap-2 shadow-glow">
                 Start Shopping
                 <ArrowRight className="h-4 w-4" />
               </Button>
@@ -56,37 +60,33 @@ export default function Cart() {
 
           {/* Order Summary */}
           <div className="lg:col-span-1">
-            <Card className="sticky top-24">
+            <Card className="sticky top-24 border-border/50 bg-card/50 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle>Order Summary</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Subtotal ({totalItems} items)</span>
-                  <span>${totalPrice.toFixed(2)}</span>
+                  <span>₦{formatPrice(totalPrice)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Shipping</span>
-                  <span>{shipping === 0 ? "Free" : `$${shipping.toFixed(2)}`}</span>
+                  <span>{shipping === 0 ? "Free" : `₦${formatPrice(shipping)}`}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Tax</span>
-                  <span>${tax.toFixed(2)}</span>
-                </div>
-                <Separator />
+                <Separator className="bg-border/50" />
                 <div className="flex justify-between font-semibold text-lg">
                   <span>Total</span>
-                  <span className="text-primary">${orderTotal.toFixed(2)}</span>
+                  <span className="text-primary">₦{formatPrice(orderTotal)}</span>
                 </div>
-                {totalPrice < 50 && (
+                {totalPrice < freeShippingThreshold && (
                   <p className="text-xs text-muted-foreground">
-                    Add ${(50 - totalPrice).toFixed(2)} more for free shipping!
+                    Add ₦{formatPrice(freeShippingThreshold - totalPrice)} more for free shipping!
                   </p>
                 )}
               </CardContent>
               <CardFooter>
                 <Link to="/checkout" className="w-full">
-                  <Button size="lg" className="w-full gap-2">
+                  <Button size="lg" className="w-full gap-2 shadow-glow">
                     Proceed to Checkout
                     <ArrowRight className="h-4 w-4" />
                   </Button>
