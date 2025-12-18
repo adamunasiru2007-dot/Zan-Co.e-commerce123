@@ -2,14 +2,20 @@ import { Product } from "@/types";
 
 // Import product images
 import teesBlackWhite from "@/assets/products/tees-black-white.jpg";
+import teesLongsleeve from "@/assets/products/tees-longsleeve.jpg";
 import jerseyEngland from "@/assets/products/jersey-england-blue.jpeg";
 import jerseyMilan from "@/assets/products/jersey-milan-white.jpeg";
+import jerseySantos from "@/assets/products/jersey-santos.jpeg";
+import jerseyManutd from "@/assets/products/jersey-manutd-collection.jpeg";
 import braceletColorful from "@/assets/products/bracelet-colorful.jpg";
+import ringsGemstone from "@/assets/products/rings-gemstone.jpg";
 import chainCuban from "@/assets/products/chain-cuban.webp";
 import capBlack from "@/assets/products/cap-black.png";
+import capWhite from "@/assets/products/cap-white.webp";
 import shoesWhiteAf1 from "@/assets/products/shoes-white-af1.webp";
 import shoesBlackFormal from "@/assets/products/shoes-black-formal.webp";
 import jeansBlue from "@/assets/products/jeans-blue.jpg";
+import jeansGrey from "@/assets/products/jeans-grey.jpg";
 
 export const products: Product[] = [
   // Tees - Short Sleeve
@@ -37,7 +43,7 @@ export const products: Product[] = [
     name: "Urban Long Sleeve",
     description: "Stylish long-sleeve tee made from premium fabric. Great for layering.",
     price: 8000,
-    image: teesBlackWhite,
+    image: teesLongsleeve,
     stock: 40,
     category: "Tees"
   },
@@ -60,6 +66,24 @@ export const products: Product[] = [
     stock: 25,
     category: "Jerseys"
   },
+  {
+    id: "15",
+    name: "Santos FC Home Jersey",
+    description: "Classic striped football jersey. Authentic Brazilian club style.",
+    price: 13000,
+    image: jerseySantos,
+    stock: 20,
+    category: "Jerseys"
+  },
+  {
+    id: "16",
+    name: "Man United Collection",
+    description: "Premium Manchester United jerseys. Home, away, and third kit available.",
+    price: 13000,
+    image: jerseyManutd,
+    stock: 35,
+    category: "Jerseys"
+  },
   // Accessories - Bracelets
   {
     id: "6",
@@ -73,10 +97,10 @@ export const products: Product[] = [
   // Accessories - Rings
   {
     id: "7",
-    name: "Minimalist Silver Ring",
-    description: "Elegant silver-tone ring with a sleek, modern design.",
+    name: "Gemstone Statement Ring",
+    description: "Elegant vintage-style ring with beautiful gemstones. Bold statement piece.",
     price: 2000,
-    image: braceletColorful,
+    image: ringsGemstone,
     stock: 80,
     category: "Accessories"
   },
@@ -102,10 +126,10 @@ export const products: Product[] = [
   },
   {
     id: "10",
-    name: "Dad Hat Classic",
-    description: "Comfortable dad hat with curved brim. Perfect for casual looks.",
+    name: "Classic White Cap",
+    description: "Clean white cap with curved brim. Perfect for casual looks.",
     price: 10000,
-    image: capBlack,
+    image: capWhite,
     stock: 55,
     category: "Caps"
   },
@@ -131,8 +155,8 @@ export const products: Product[] = [
   // Jeans
   {
     id: "13",
-    name: "Slim Fit Jeans",
-    description: "Premium denim jeans with a modern slim fit. Comfortable stretch fabric.",
+    name: "Classic Blue Denim",
+    description: "Premium denim jeans with a modern fit. Comfortable stretch fabric.",
     price: 15000,
     image: jeansBlue,
     stock: 35,
@@ -140,10 +164,10 @@ export const products: Product[] = [
   },
   {
     id: "14",
-    name: "Classic Blue Denim",
-    description: "Timeless blue jeans with straight leg cut. Built to last.",
+    name: "Vintage Grey Jeans",
+    description: "Wrangler style grey jeans with straight leg cut. Built to last.",
     price: 15000,
-    image: jeansBlue,
+    image: jeansGrey,
     stock: 40,
     category: "Jeans"
   }
