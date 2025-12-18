@@ -14,10 +14,14 @@ export function ProductCard({ product }: ProductCardProps) {
   const { addItem } = useCart();
   const isOutOfStock = product.stock === 0;
 
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("en-NG").format(price);
+  };
+
   return (
-    <Card className="group overflow-hidden border-0 shadow-md hover:shadow-xl transition-all duration-300 animate-fade-in">
+    <Card className="group overflow-hidden border-border/50 bg-card/50 backdrop-blur-sm hover:border-primary/30 hover:shadow-glow transition-all duration-300 animate-fade-in">
       <Link to={`/product/${product.id}`}>
-        <div className="relative aspect-square overflow-hidden bg-muted">
+        <div className="relative aspect-square overflow-hidden bg-muted/50">
           <img
             src={product.image}
             alt={product.name}
@@ -30,7 +34,7 @@ export function ProductCard({ product }: ProductCardProps) {
               </Badge>
             </div>
           )}
-          <Badge className="absolute left-3 top-3" variant="secondary">
+          <Badge className="absolute left-3 top-3 bg-primary/90 hover:bg-primary">
             {product.category}
           </Badge>
         </div>
@@ -41,18 +45,20 @@ export function ProductCard({ product }: ProductCardProps) {
             {product.name}
           </h3>
         </Link>
-        <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+        <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
           {product.description}
         </p>
         <div className="flex items-center justify-between">
-          <span className="text-xl font-bold text-primary">
-            ${product.price.toFixed(2)}
-          </span>
+          <div className="flex flex-col">
+            <span className="text-2xl font-bold text-primary">
+              ₦{formatPrice(product.price)}
+            </span>
+          </div>
           <Button
             size="sm"
             onClick={() => addItem(product)}
             disabled={isOutOfStock}
-            className="gap-2"
+            className="gap-2 shadow-glow"
           >
             <ShoppingCart className="h-4 w-4" />
             Add

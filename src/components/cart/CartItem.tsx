@@ -7,13 +7,17 @@ interface CartItemProps {
   item: CartItemType;
 }
 
+const formatPrice = (price: number) => {
+  return new Intl.NumberFormat("en-NG").format(price);
+};
+
 export function CartItem({ item }: CartItemProps) {
   const { updateQuantity, removeItem } = useCart();
   const { product, quantity } = item;
 
   return (
-    <div className="flex gap-4 p-4 bg-card rounded-lg border animate-fade-in">
-      <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md bg-muted">
+    <div className="flex gap-4 p-4 bg-card/50 backdrop-blur-sm rounded-lg border border-border/50 animate-fade-in">
+      <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md bg-muted/50">
         <img
           src={product.image}
           alt={product.name}
@@ -24,7 +28,7 @@ export function CartItem({ item }: CartItemProps) {
       <div className="flex flex-1 flex-col justify-between">
         <div>
           <h3 className="font-medium">{product.name}</h3>
-          <p className="text-sm text-muted-foreground">${product.price.toFixed(2)}</p>
+          <p className="text-sm text-muted-foreground">₦{formatPrice(product.price)}</p>
         </div>
 
         <div className="flex items-center justify-between">
@@ -32,7 +36,7 @@ export function CartItem({ item }: CartItemProps) {
             <Button
               variant="outline"
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 border-border/50"
               onClick={() => updateQuantity(product.id, quantity - 1)}
               disabled={quantity <= 1}
             >
@@ -42,7 +46,7 @@ export function CartItem({ item }: CartItemProps) {
             <Button
               variant="outline"
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 border-border/50"
               onClick={() => updateQuantity(product.id, quantity + 1)}
               disabled={quantity >= product.stock}
             >
@@ -51,8 +55,8 @@ export function CartItem({ item }: CartItemProps) {
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="font-semibold">
-              ${(product.price * quantity).toFixed(2)}
+            <span className="font-semibold text-primary">
+              ₦{formatPrice(product.price * quantity)}
             </span>
             <Button
               variant="ghost"
