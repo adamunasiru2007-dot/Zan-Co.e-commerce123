@@ -60,15 +60,15 @@ const Contact = () => {
               rel="noopener noreferrer"
               className="group bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl p-6 flex items-center gap-4 hover:border-primary/50 hover:shadow-glow transition-all duration-300"
             >
-              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                <MessageCircle className="h-6 w-6 text-primary" />
+              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#25D366]/10 group-hover:bg-[#25D366]/20 transition-colors">
+                <MessageCircle className="h-6 w-6 text-[#25D366]" />
               </div>
               <div className="flex-1">
                 <p className="text-sm text-muted-foreground mb-1">WhatsApp</p>
-                <p className="text-xl font-semibold">Send a Message</p>
+                <p className="text-xl font-semibold">08144853538</p>
               </div>
-              <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                Chat
+              <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity text-[#25D366]">
+                Chat Now
               </Button>
             </a>
           </div>
