@@ -1,77 +1,166 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
-import { User } from "@/types";
+import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+import { User, Session } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
+interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  role: 'USER' | 'ADMIN';
+}
+
 interface AuthContextType {
-  user: User | null;
+  user: AuthUser | null;
+  session: Session | null;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   register: (name: string, email: string, password: string) => Promise<boolean>;
-  logout: () => void;
+  logout: () => Promise<void>;
+  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock user database
-const mockUsers: Map<string, { user: User; password: string }> = new Map();
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  const login = useCallback(async (email: string, password: string) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    
-    const userData = mockUsers.get(email);
-    if (userData && userData.password === password) {
-      setUser(userData.user);
-      toast({
-        title: "Welcome back!",
-        description: `Logged in as ${userData.user.name}`,
-      });
-      return true;
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (profile) {
+        const role = roleData?.role === 'admin' ? 'ADMIN' : 'USER';
+        setUser({
+          id: userId,
+          email: profile.email,
+          name: profile.name,
+          role,
+        });
+        setIsAdmin(role === 'ADMIN');
+      }
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
     }
-    
-    toast({
-      title: "Login failed",
-      description: "Invalid email or password",
-      variant: "destructive",
+  };
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        
+        if (session?.user) {
+          setTimeout(() => {
+            fetchUserProfile(session.user.id);
+          }, 0);
+        } else {
+          setUser(null);
+          setIsAdmin(false);
+        }
+        setIsLoading(false);
+      }
+    );
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user) {
+        fetchUserProfile(session.user.id);
+      }
+      setIsLoading(false);
     });
-    return false;
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const register = useCallback(async (name: string, email: string, password: string) => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    
-    if (mockUsers.has(email)) {
+  const login = useCallback(async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        toast({
+          title: "Login failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        return false;
+      }
+
       toast({
-        title: "Registration failed",
-        description: "Email already exists",
+        title: "Welcome back!",
+        description: "Logged in successfully",
+      });
+      return true;
+    } catch (error) {
+      toast({
+        title: "Login failed",
+        description: "An unexpected error occurred",
         variant: "destructive",
       });
       return false;
     }
-
-    const newUser: User = {
-      id: crypto.randomUUID(),
-      email,
-      name,
-      role: "USER",
-    };
-
-    mockUsers.set(email, { user: newUser, password });
-    setUser(newUser);
-    
-    toast({
-      title: "Welcome!",
-      description: "Your account has been created successfully",
-    });
-    return true;
   }, []);
 
-  const logout = useCallback(() => {
+  const register = useCallback(async (name: string, email: string, password: string) => {
+    try {
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            name,
+          },
+        },
+      });
+
+      if (error) {
+        toast({
+          title: "Registration failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      toast({
+        title: "Welcome!",
+        description: "Your account has been created successfully",
+      });
+      return true;
+    } catch (error) {
+      toast({
+        title: "Registration failed",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+      return false;
+    }
+  }, []);
+
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut();
     setUser(null);
+    setSession(null);
+    setIsAdmin(false);
     toast({
       title: "Logged out",
       description: "See you soon!",
@@ -82,10 +171,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
-        isAuthenticated: !!user,
+        session,
+        isAuthenticated: !!session,
+        isAdmin,
         login,
         register,
         logout,
+        isLoading,
       }}
     >
       {children}

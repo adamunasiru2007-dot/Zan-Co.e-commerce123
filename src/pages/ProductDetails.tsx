@@ -6,9 +6,54 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { products } from "@/data/products";
 import { useCart } from "@/contexts/CartContext";
+import { ProductOptions, defaultSizes, defaultColors } from "@/components/products/ProductOptions";
+import { ReviewSection } from "@/components/products/ReviewSection";
 
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat("en-NG").format(price);
+};
+
+// Category-specific options
+const categoryOptions: Record<string, { sizes: string[]; colors: typeof defaultColors }> = {
+  Tees: {
+    sizes: ["S", "M", "L", "XL", "XXL"],
+    colors: defaultColors,
+  },
+  Jerseys: {
+    sizes: ["S", "M", "L", "XL", "XXL"],
+    colors: [
+      { name: "Home", hex: "#1e3a5f" },
+      { name: "Away", hex: "#ffffff" },
+      { name: "Third", hex: "#1a1a1a" },
+    ],
+  },
+  Jeans: {
+    sizes: ["28", "30", "32", "34", "36", "38"],
+    colors: [
+      { name: "Blue", hex: "#1e40af" },
+      { name: "Black", hex: "#1a1a1a" },
+      { name: "Grey", hex: "#6b7280" },
+    ],
+  },
+  Caps: {
+    sizes: ["One Size"],
+    colors: defaultColors.slice(0, 4),
+  },
+  Shoes: {
+    sizes: ["40", "41", "42", "43", "44", "45"],
+    colors: [
+      { name: "White", hex: "#ffffff" },
+      { name: "Black", hex: "#1a1a1a" },
+    ],
+  },
+  Accessories: {
+    sizes: [],
+    colors: [
+      { name: "Gold", hex: "#d4af37" },
+      { name: "Silver", hex: "#c0c0c0" },
+      { name: "Rose Gold", hex: "#b76e79" },
+    ],
+  },
 };
 
 export default function ProductDetails() {
@@ -16,6 +61,8 @@ export default function ProductDetails() {
   const navigate = useNavigate();
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
+  const [selectedSize, setSelectedSize] = useState("");
+  const [selectedColor, setSelectedColor] = useState("");
 
   const product = products.find((p) => p.id === id);
 
@@ -32,14 +79,28 @@ export default function ProductDetails() {
     );
   }
 
+  const options = categoryOptions[product.category] || { sizes: [], colors: [] };
   const isOutOfStock = product.stock === 0;
 
   const handleAddToCart = () => {
+    // Validate selections if options are available
+    if (options.sizes.length > 0 && !selectedSize) {
+      return;
+    }
+    if (options.colors.length > 0 && !selectedColor) {
+      return;
+    }
+
     for (let i = 0; i < quantity; i++) {
-      addItem(product);
+      addItem(product, selectedSize || undefined, selectedColor || undefined);
     }
     setQuantity(1);
   };
+
+  const canAddToCart =
+    !isOutOfStock &&
+    (options.sizes.length === 0 || selectedSize) &&
+    (options.colors.length === 0 || selectedColor);
 
   return (
     <Layout>
@@ -91,6 +152,20 @@ export default function ProductDetails() {
 
             {!isOutOfStock && (
               <>
+                {/* Size & Color Options */}
+                {(options.sizes.length > 0 || options.colors.length > 0) && (
+                  <div className="mb-6">
+                    <ProductOptions
+                      sizes={options.sizes}
+                      colors={options.colors}
+                      selectedSize={selectedSize}
+                      selectedColor={selectedColor}
+                      onSizeChange={setSelectedSize}
+                      onColorChange={setSelectedColor}
+                    />
+                  </div>
+                )}
+
                 {/* Quantity Selector */}
                 <div className="flex items-center gap-4 mb-6">
                   <span className="text-sm font-medium">Quantity:</span>
@@ -122,9 +197,12 @@ export default function ProductDetails() {
                   size="lg"
                   className="w-full md:w-auto gap-2 shadow-glow"
                   onClick={handleAddToCart}
+                  disabled={!canAddToCart}
                 >
                   <ShoppingCart className="h-5 w-5" />
-                  Add to Cart - ₦{formatPrice(product.price * quantity)}
+                  {!canAddToCart
+                    ? "Select options"
+                    : `Add to Cart - ₦${formatPrice(product.price * quantity)}`}
                 </Button>
               </>
             )}
@@ -140,6 +218,9 @@ export default function ProductDetails() {
             </div>
           </div>
         </div>
+
+        {/* Reviews Section */}
+        <ReviewSection productId={product.id} />
       </div>
     </Layout>
   );

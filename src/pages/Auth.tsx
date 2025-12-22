@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Package } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export default function Auth() {
   const navigate = useNavigate();
-  const { login, register } = useAuth();
+  const { login, register, isAuthenticated, isLoading: authLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -23,6 +23,13 @@ export default function Auth() {
   const [registerName, setRegisterName] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && !authLoading) {
+      navigate("/");
+    }
+  }, [isAuthenticated, authLoading, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,17 +51,27 @@ export default function Auth() {
     }
   };
 
+  if (authLoading) {
+    return (
+      <Layout>
+        <div className="container flex items-center justify-center py-16 md:py-24">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <div className="container flex items-center justify-center py-16 md:py-24">
         <Card className="w-full max-w-md border-0 shadow-xl">
           <CardHeader className="text-center pb-2">
             <div className="flex justify-center mb-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
-                <Package className="h-6 w-6 text-primary-foreground" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary shadow-glow">
+                <span className="text-xl font-bold text-primary-foreground">Z</span>
               </div>
             </div>
-            <CardTitle className="text-2xl">Welcome to GreenMart</CardTitle>
+            <CardTitle className="text-2xl">Welcome to ZAN&CO</CardTitle>
             <CardDescription>Sign in to your account or create a new one</CardDescription>
           </CardHeader>
           <CardContent>
@@ -103,7 +120,7 @@ export default function Auth() {
                       </Button>
                     </div>
                   </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
+                  <Button type="submit" className="w-full shadow-glow" disabled={isLoading}>
                     {isLoading ? "Signing in..." : "Sign In"}
                   </Button>
                 </form>
@@ -160,7 +177,7 @@ export default function Auth() {
                       </Button>
                     </div>
                   </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
+                  <Button type="submit" className="w-full shadow-glow" disabled={isLoading}>
                     {isLoading ? "Creating account..." : "Create Account"}
                   </Button>
                 </form>
