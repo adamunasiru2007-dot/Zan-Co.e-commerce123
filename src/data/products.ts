@@ -26,7 +26,8 @@ export const products: Product[] = [
     price: 6000,
     image: teesBlackWhite,
     stock: 50,
-    category: "Tees"
+    category: "Tees",
+    zipCode: "100001"
   },
   {
     id: "2",
@@ -35,7 +36,8 @@ export const products: Product[] = [
     price: 6000,
     image: teesBlackWhite,
     stock: 45,
-    category: "Tees"
+    category: "Tees",
+    zipCode: "100002"
   },
   // Tees - Long Sleeve
   {
@@ -45,7 +47,8 @@ export const products: Product[] = [
     price: 8000,
     image: teesLongsleeve,
     stock: 40,
-    category: "Tees"
+    category: "Tees",
+    zipCode: "100003"
   },
   // Jerseys
   {
@@ -55,7 +58,8 @@ export const products: Product[] = [
     price: 13000,
     image: jerseyEngland,
     stock: 30,
-    category: "Jerseys"
+    category: "Jerseys",
+    zipCode: "200001"
   },
   {
     id: "5",
@@ -64,7 +68,8 @@ export const products: Product[] = [
     price: 13000,
     image: jerseyMilan,
     stock: 25,
-    category: "Jerseys"
+    category: "Jerseys",
+    zipCode: "200002"
   },
   {
     id: "15",
@@ -73,7 +78,8 @@ export const products: Product[] = [
     price: 13000,
     image: jerseySantos,
     stock: 20,
-    category: "Jerseys"
+    category: "Jerseys",
+    zipCode: "200003"
   },
   {
     id: "16",
@@ -82,7 +88,8 @@ export const products: Product[] = [
     price: 13000,
     image: jerseyManutd,
     stock: 35,
-    category: "Jerseys"
+    category: "Jerseys",
+    zipCode: "200004"
   },
   // Accessories - Bracelets
   {
@@ -92,7 +99,8 @@ export const products: Product[] = [
     price: 3000,
     image: braceletColorful,
     stock: 100,
-    category: "Accessories"
+    category: "Accessories",
+    zipCode: "300001"
   },
   // Accessories - Rings
   {
@@ -102,7 +110,8 @@ export const products: Product[] = [
     price: 2000,
     image: ringsGemstone,
     stock: 80,
-    category: "Accessories"
+    category: "Accessories",
+    zipCode: "300002"
   },
   // Accessories - Chains
   {
@@ -112,7 +121,8 @@ export const products: Product[] = [
     price: 5000,
     image: chainCuban,
     stock: 60,
-    category: "Accessories"
+    category: "Accessories",
+    zipCode: "300003"
   },
   // Caps
   {
@@ -122,7 +132,8 @@ export const products: Product[] = [
     price: 10000,
     image: capBlack,
     stock: 70,
-    category: "Caps"
+    category: "Caps",
+    zipCode: "400001"
   },
   {
     id: "10",
@@ -131,7 +142,8 @@ export const products: Product[] = [
     price: 10000,
     image: capWhite,
     stock: 55,
-    category: "Caps"
+    category: "Caps",
+    zipCode: "400002"
   },
   // Shoes
   {
@@ -141,7 +153,8 @@ export const products: Product[] = [
     price: 50000,
     image: shoesWhiteAf1,
     stock: 20,
-    category: "Shoes"
+    category: "Shoes",
+    zipCode: "500001"
   },
   {
     id: "12",
@@ -150,7 +163,8 @@ export const products: Product[] = [
     price: 50000,
     image: shoesBlackFormal,
     stock: 15,
-    category: "Shoes"
+    category: "Shoes",
+    zipCode: "500002"
   },
   // Jeans
   {
@@ -160,7 +174,8 @@ export const products: Product[] = [
     price: 15000,
     image: jeansBlue,
     stock: 35,
-    category: "Jeans"
+    category: "Jeans",
+    zipCode: "600001"
   },
   {
     id: "14",
@@ -169,7 +184,8 @@ export const products: Product[] = [
     price: 15000,
     image: jeansGrey,
     stock: 40,
-    category: "Jeans"
+    category: "Jeans",
+    zipCode: "600002"
   }
 ];
 
