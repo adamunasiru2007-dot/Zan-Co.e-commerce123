@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Building2, ArrowLeft, Lock } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
@@ -12,11 +12,23 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
+// Generate ZIP code based on cart items
+const generateZipCode = (items: { product: { zipCode: string }; quantity: number }[]): string => {
+  if (items.length === 0) return "";
+  
+  // Combine all product ZIP codes with quantities to create a unique code
+  const zipParts = items.map(item => `${item.product.zipCode}-${item.quantity}`);
+  return zipParts.join("/");
+};
+
 export default function Checkout() {
   const navigate = useNavigate();
   const { items, totalPrice, clearCart } = useCart();
   const { isAuthenticated, user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Auto-generate ZIP code based on cart items
+  const autoZipCode = useMemo(() => generateZipCode(items), [items]);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -24,7 +36,6 @@ export default function Checkout() {
     name: user?.name || "",
     address: "",
     city: "",
-    zipCode: "",
   });
 
   const shipping = totalPrice > 50 ? 0 : 4.99;
@@ -200,13 +211,13 @@ export default function Checkout() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="zipCode">ZIP Code</Label>
+                      <Label htmlFor="zipCode">ZIP Code (Auto-generated)</Label>
                       <Input
                         id="zipCode"
                         name="zipCode"
-                        value={formData.zipCode}
-                        onChange={handleInputChange}
-                        required
+                        value={autoZipCode}
+                        readOnly
+                        className="bg-muted cursor-not-allowed"
                       />
                     </div>
                   </div>
