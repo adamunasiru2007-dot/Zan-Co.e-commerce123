@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Users, ShoppingBag, Package, Star, TrendingUp } from "lucide-react";
+import { Users, ShoppingBag, Star, TrendingUp, CheckCircle, XCircle, Clock } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 interface UserProfile {
   id: string;
+  user_id: string;
   name: string;
   email: string;
   created_at: string;
@@ -64,8 +67,8 @@ export default function Admin() {
         .from("profiles")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(10);
-      
+        .limit(20);
+
       setUsers(profilesData || []);
 
       // Load orders
@@ -73,7 +76,7 @@ export default function Admin() {
         .from("orders")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(20);
 
       // Get user names for orders
       const ordersWithNames = await Promise.all(
@@ -93,7 +96,7 @@ export default function Admin() {
         .from("product_reviews")
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(10);
+        .limit(20);
 
       const reviewsWithNames = await Promise.all(
         (reviewsData || []).map(async (review) => {
@@ -110,6 +113,32 @@ export default function Admin() {
       console.error("Error loading dashboard data:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from("orders")
+        .update({ status: newStatus })
+        .eq("id", orderId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Order Updated",
+        description: `Order status changed to ${newStatus}`,
+      });
+
+      // Refresh data
+      loadDashboardData();
+    } catch (error) {
+      console.error("Error updating order:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update order status",
+        variant: "destructive",
+      });
     }
   };
 
@@ -132,6 +161,7 @@ export default function Admin() {
     reviews.length > 0
       ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
       : 0;
+  const pendingOrders = orders.filter((o) => o.status === "pending").length;
 
   return (
     <Layout>
@@ -139,7 +169,7 @@ export default function Admin() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
           <p className="text-muted-foreground">
-            Manage users, orders, and view analytics
+            View user registrations, manage orders, and monitor activity
           </p>
         </div>
 
@@ -152,6 +182,7 @@ export default function Admin() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{users.length}</div>
+              <p className="text-xs text-muted-foreground">Registered accounts</p>
             </CardContent>
           </Card>
           <Card className="bg-card/50 border-border/50">
@@ -161,6 +192,7 @@ export default function Admin() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{orders.length}</div>
+              <p className="text-xs text-muted-foreground">{pendingOrders} pending</p>
             </CardContent>
           </Card>
           <Card className="bg-card/50 border-border/50">
@@ -170,6 +202,7 @@ export default function Admin() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">₦{formatPrice(totalRevenue)}</div>
+              <p className="text-xs text-muted-foreground">Total earnings</p>
             </CardContent>
           </Card>
           <Card className="bg-card/50 border-border/50">
@@ -179,22 +212,23 @@ export default function Admin() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{averageRating.toFixed(1)}/5</div>
+              <p className="text-xs text-muted-foreground">{reviews.length} reviews</p>
             </CardContent>
           </Card>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8">
-          {/* Recent Users */}
+          {/* User Logins / Registrations */}
           <Card className="bg-card/50 border-border/50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-primary" />
-                Recent Registrations
+                User Logins & Registrations
               </CardTitle>
-              <CardDescription>Latest user sign-ups</CardDescription>
+              <CardDescription>All registered users and their details</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-3 max-h-96 overflow-y-auto">
                 {users.length === 0 ? (
                   <p className="text-muted-foreground text-center py-4">
                     No users yet
@@ -203,15 +237,18 @@ export default function Admin() {
                   users.map((user) => (
                     <div
                       key={user.id}
-                      className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
+                      className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
                     >
-                      <div>
-                        <p className="font-medium">{user.name}</p>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{user.name}</p>
+                        <p className="text-sm text-muted-foreground truncate">{user.email}</p>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(user.created_at).toLocaleDateString()}
-                      </p>
+                      <div className="text-right ml-4">
+                        <Badge variant="outline" className="mb-1">Active</Badge>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(user.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
                   ))
                 )}
@@ -219,17 +256,17 @@ export default function Admin() {
             </CardContent>
           </Card>
 
-          {/* Recent Orders */}
+          {/* Orders / Applications */}
           <Card className="bg-card/50 border-border/50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ShoppingBag className="h-5 w-5 text-primary" />
-                Recent Orders
+                Orders & Applications
               </CardTitle>
-              <CardDescription>Latest customer orders</CardDescription>
+              <CardDescription>Approve or reject customer orders</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-3 max-h-96 overflow-y-auto">
                 {orders.length === 0 ? (
                   <p className="text-muted-foreground text-center py-4">
                     No orders yet
@@ -238,30 +275,58 @@ export default function Admin() {
                   orders.map((order) => (
                     <div
                       key={order.id}
-                      className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
+                      className="p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
                     >
-                      <div>
-                        <p className="font-medium">{order.user_name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          ₦{formatPrice(order.total)}
-                        </p>
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <p className="font-medium">{order.user_name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            ₦{formatPrice(order.total)}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <Badge
+                            variant={
+                              order.status === "completed"
+                                ? "default"
+                                : order.status === "rejected"
+                                ? "destructive"
+                                : "secondary"
+                            }
+                            className="mb-1"
+                          >
+                            {order.status === "pending" && <Clock className="h-3 w-3 mr-1" />}
+                            {order.status === "completed" && <CheckCircle className="h-3 w-3 mr-1" />}
+                            {order.status === "rejected" && <XCircle className="h-3 w-3 mr-1" />}
+                            {order.status}
+                          </Badge>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(order.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <Badge
-                          variant={
-                            order.status === "completed"
-                              ? "default"
-                              : order.status === "pending"
-                              ? "secondary"
-                              : "outline"
-                          }
-                        >
-                          {order.status}
-                        </Badge>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(order.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
+                      
+                      {order.status === "pending" && (
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => updateOrderStatus(order.id, "completed")}
+                            className="flex-1"
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Approve
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => updateOrderStatus(order.id, "rejected")}
+                            className="flex-1"
+                          >
+                            <XCircle className="h-4 w-4 mr-1" />
+                            Reject
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   ))
                 )}
@@ -276,10 +341,10 @@ export default function Admin() {
                 <Star className="h-5 w-5 text-primary" />
                 Recent Reviews
               </CardTitle>
-              <CardDescription>Latest product reviews</CardDescription>
+              <CardDescription>Latest product reviews from customers</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid md:grid-cols-2 gap-4 max-h-80 overflow-y-auto">
                 {reviews.length === 0 ? (
                   <p className="text-muted-foreground text-center py-4 col-span-2">
                     No reviews yet
@@ -311,7 +376,7 @@ export default function Admin() {
                         </p>
                       )}
                       <p className="text-xs text-muted-foreground mt-2">
-                        Product ID: {review.product_id}
+                        {new Date(review.created_at).toLocaleDateString()}
                       </p>
                     </div>
                   ))
