@@ -17,6 +17,8 @@ export default function Auth() {
   const { login, register, isAuthenticated, isLoading: authLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
 
   // Login state
   const [loginEmail, setLoginEmail] = useState("");
@@ -43,6 +45,42 @@ export default function Auth() {
     setIsLoading(false);
     if (success) {
       navigate("/");
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail) {
+      toast({
+        title: "Email Required",
+        description: "Please enter your email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+        redirectTo: `${window.location.origin}/auth`,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Reset Email Sent",
+        description: "Check your email for a password reset link",
+      });
+      setShowForgotPassword(false);
+      setForgotEmail("");
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send reset email",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -147,10 +185,65 @@ export default function Auth() {
                       </Button>
                     </div>
                   </div>
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="px-0 text-sm text-primary"
+                      onClick={() => setShowForgotPassword(true)}
+                    >
+                      Forgot Password?
+                    </Button>
+                  </div>
                   <Button type="submit" className="w-full shadow-glow" disabled={isLoading}>
                     {isLoading ? "Signing in..." : "Sign In"}
                   </Button>
                 </form>
+
+                {/* Forgot Password Modal */}
+                {showForgotPassword && (
+                  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <Card className="w-full max-w-sm">
+                      <CardHeader>
+                        <CardTitle>Reset Password</CardTitle>
+                        <CardDescription>
+                          Enter your email address and we'll send you a reset link
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <form onSubmit={handleForgotPassword} className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="forgot-email">Email</Label>
+                            <Input
+                              id="forgot-email"
+                              type="email"
+                              placeholder="you@example.com"
+                              value={forgotEmail}
+                              onChange={(e) => setForgotEmail(e.target.value)}
+                              required
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="flex-1"
+                              onClick={() => {
+                                setShowForgotPassword(false);
+                                setForgotEmail("");
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                            <Button type="submit" className="flex-1" disabled={isLoading}>
+                              {isLoading ? "Sending..." : "Send Reset Link"}
+                            </Button>
+                          </div>
+                        </form>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="register">
