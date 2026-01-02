@@ -1,11 +1,11 @@
 import { useState, useMemo } from "react";
-import { Search, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { ProductGrid } from "@/components/products/ProductGrid";
 import { ProductCard } from "@/components/products/ProductCard";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { products, categories } from "@/data/products";
+import { SearchDropdown } from "@/components/search/SearchDropdown";
 
 const Index = () => {
   const [search, setSearch] = useState("");
@@ -52,17 +52,10 @@ const Index = () => {
           </p>
           
           <div
-            className="relative max-w-md mx-auto animate-fade-in"
+            className="animate-fade-in"
             style={{ animationDelay: "200ms" }}
           >
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search products..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-12 h-14 text-base bg-card/50 border-border/50 focus:border-primary"
-            />
+            <SearchDropdown />
           </div>
         </div>
       </section>

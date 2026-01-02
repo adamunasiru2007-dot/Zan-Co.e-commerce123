@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Check, X } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePasswordValidation } from "@/hooks/usePasswordValidation";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -23,6 +26,8 @@ export default function Auth() {
   const [registerName, setRegisterName] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
+
+  const passwordValidation = usePasswordValidation(registerPassword);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -43,12 +48,34 @@ export default function Auth() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!passwordValidation.isValid) {
+      toast({
+        title: "Invalid Password",
+        description: passwordValidation.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     const success = await register(registerName, registerEmail, registerPassword);
-    setIsLoading(false);
+    
     if (success) {
+      // Send welcome email
+      try {
+        await supabase.functions.invoke("send-welcome-email", {
+          body: {
+            email: registerEmail,
+            name: registerName,
+          },
+        });
+      } catch (error) {
+        console.error("Failed to send welcome email:", error);
+      }
       navigate("/");
     }
+    setIsLoading(false);
   };
 
   if (authLoading) {
@@ -160,7 +187,6 @@ export default function Auth() {
                         value={registerPassword}
                         onChange={(e) => setRegisterPassword(e.target.value)}
                         required
-                        minLength={6}
                       />
                       <Button
                         type="button"
@@ -176,8 +202,30 @@ export default function Auth() {
                         )}
                       </Button>
                     </div>
+                    
+                    {/* Password Requirements */}
+                    {registerPassword.length > 0 && (
+                      <div className="mt-2 space-y-1 text-sm">
+                        <div className={`flex items-center gap-2 ${passwordValidation.hasMinLength ? "text-green-500" : "text-muted-foreground"}`}>
+                          {passwordValidation.hasMinLength ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
+                          <span>At least 8 characters</span>
+                        </div>
+                        <div className={`flex items-center gap-2 ${passwordValidation.hasNumber ? "text-green-500" : "text-muted-foreground"}`}>
+                          {passwordValidation.hasNumber ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
+                          <span>At least 1 number</span>
+                        </div>
+                        <div className={`flex items-center gap-2 ${passwordValidation.hasSpecialChar ? "text-green-500" : "text-muted-foreground"}`}>
+                          {passwordValidation.hasSpecialChar ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
+                          <span>At least 1 special character</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <Button type="submit" className="w-full shadow-glow" disabled={isLoading}>
+                  <Button 
+                    type="submit" 
+                    className="w-full shadow-glow" 
+                    disabled={isLoading || !passwordValidation.isValid}
+                  >
                     {isLoading ? "Creating account..." : "Create Account"}
                   </Button>
                 </form>
