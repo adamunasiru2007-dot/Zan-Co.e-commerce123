@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff, Check, X } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -14,11 +14,19 @@ import { toast } from "@/hooks/use-toast";
 
 export default function Auth() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login, register, isAuthenticated, isLoading: authLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
+  
+  // Password reset state
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [resetToken, setResetToken] = useState("");
+  const [resetEmail, setResetEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   // Login state
   const [loginEmail, setLoginEmail] = useState("");
@@ -30,13 +38,51 @@ export default function Auth() {
   const [registerPassword, setRegisterPassword] = useState("");
 
   const passwordValidation = usePasswordValidation(registerPassword);
+  const newPasswordValidation = usePasswordValidation(newPassword);
+
+  // Check for reset token in URL
+  useEffect(() => {
+    const token = searchParams.get("reset_token");
+    if (token) {
+      validateResetToken(token);
+    }
+  }, [searchParams]);
+
+  const validateResetToken = async (token: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke("reset-password", {
+        body: { token },
+      });
+
+      if (error) throw error;
+
+      if (data.valid) {
+        setResetToken(token);
+        setResetEmail(data.email);
+        setShowResetPassword(true);
+      } else {
+        toast({
+          title: "Invalid Link",
+          description: data.error || "This password reset link is invalid or expired",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error("Token validation error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to validate reset link",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated && !authLoading) {
+    if (isAuthenticated && !authLoading && !showResetPassword) {
       navigate("/");
     }
-  }, [isAuthenticated, authLoading, navigate]);
+  }, [isAuthenticated, authLoading, navigate, showResetPassword]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,15 +107,18 @@ export default function Auth() {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
-        redirectTo: `${window.location.origin}/auth`,
+      const { data, error } = await supabase.functions.invoke("send-reset-password-email", {
+        body: {
+          email: forgotEmail,
+          redirectUrl: `${window.location.origin}/auth`,
+        },
       });
 
       if (error) throw error;
 
       toast({
         title: "Reset Email Sent",
-        description: "Check your email for a password reset link",
+        description: "Check your email for a password reset link from ZAN&CO",
       });
       setShowForgotPassword(false);
       setForgotEmail("");
@@ -77,6 +126,64 @@ export default function Auth() {
       toast({
         title: "Error",
         description: error.message || "Failed to send reset email",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!newPasswordValidation.isValid) {
+      toast({
+        title: "Invalid Password",
+        description: newPasswordValidation.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Passwords Don't Match",
+        description: "Please make sure both passwords are the same",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("reset-password", {
+        body: {
+          token: resetToken,
+          newPassword: newPassword,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast({
+          title: "Password Updated",
+          description: "Your password has been reset successfully. Please sign in.",
+        });
+        setShowResetPassword(false);
+        setResetToken("");
+        setResetEmail("");
+        setNewPassword("");
+        setConfirmPassword("");
+        // Clear the URL parameter
+        navigate("/auth", { replace: true });
+      } else {
+        throw new Error(data.error || "Failed to reset password");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to reset password",
         variant: "destructive",
       });
     } finally {
@@ -333,6 +440,118 @@ export default function Auth() {
             </p>
           </CardContent>
         </Card>
+
+        {/* Reset Password Modal */}
+        {showResetPassword && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <Card className="w-full max-w-sm">
+              <CardHeader>
+                <div className="flex justify-center mb-2">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
+                    <span className="text-lg font-bold text-primary-foreground">Z</span>
+                  </div>
+                </div>
+                <CardTitle className="text-center">Reset Your Password</CardTitle>
+                <CardDescription className="text-center">
+                  Create a new password for {resetEmail}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleResetPassword} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="new-password">New Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="new-password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        required
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </Button>
+                    </div>
+                    
+                    {/* Password Requirements */}
+                    {newPassword.length > 0 && (
+                      <div className="mt-2 space-y-1 text-sm">
+                        <div className={`flex items-center gap-2 ${newPasswordValidation.hasMinLength ? "text-green-500" : "text-muted-foreground"}`}>
+                          {newPasswordValidation.hasMinLength ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
+                          <span>At least 8 characters</span>
+                        </div>
+                        <div className={`flex items-center gap-2 ${newPasswordValidation.hasNumber ? "text-green-500" : "text-muted-foreground"}`}>
+                          {newPasswordValidation.hasNumber ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
+                          <span>At least 1 number</span>
+                        </div>
+                        <div className={`flex items-center gap-2 ${newPasswordValidation.hasSpecialChar ? "text-green-500" : "text-muted-foreground"}`}>
+                          {newPasswordValidation.hasSpecialChar ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
+                          <span>At least 1 special character</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-password">Confirm Password</Label>
+                    <Input
+                      id="confirm-password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                    />
+                    {confirmPassword.length > 0 && newPassword !== confirmPassword && (
+                      <p className="text-sm text-destructive flex items-center gap-1">
+                        <X className="h-3 w-3" /> Passwords do not match
+                      </p>
+                    )}
+                    {confirmPassword.length > 0 && newPassword === confirmPassword && (
+                      <p className="text-sm text-green-500 flex items-center gap-1">
+                        <Check className="h-3 w-3" /> Passwords match
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => {
+                        setShowResetPassword(false);
+                        setResetToken("");
+                        setResetEmail("");
+                        setNewPassword("");
+                        setConfirmPassword("");
+                        navigate("/auth", { replace: true });
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      className="flex-1" 
+                      disabled={isLoading || !newPasswordValidation.isValid || newPassword !== confirmPassword}
+                    >
+                      {isLoading ? "Updating..." : "Update Password"}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </Layout>
   );
