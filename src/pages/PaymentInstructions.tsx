@@ -5,17 +5,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock, Copy, Check, MessageCircle, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Layout } from "@/components/layout/Layout";
-
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 const TIMER_DURATION = 30 * 60; // 30 minutes in seconds
 
 const PaymentInstructions = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const [timeLeft, setTimeLeft] = useState(TIMER_DURATION);
   const [copied, setCopied] = useState<string | null>(null);
+  const [isNotifying, setIsNotifying] = useState(false);
   
   const orderId = location.state?.orderId;
   const total = location.state?.total;
+  const customerName = location.state?.customerName || user?.name || "Customer";
+  const customerEmail = location.state?.customerEmail || user?.email || "";
 
   useEffect(() => {
     if (!orderId) {
@@ -58,10 +63,29 @@ const PaymentInstructions = () => {
     setTimeout(() => setCopied(null), 2000);
   }, []);
 
-  const handlePayed = () => {
-    const message = encodeURIComponent("Payment sent please confirm");
-    const whatsappNumber = "2348123456789"; // Replace with actual number
+  const handlePayed = async () => {
+    setIsNotifying(true);
+    
+    try {
+      // Send email notification to admin
+      await supabase.functions.invoke("notify-admin-payment", {
+        body: {
+          orderId,
+          customerName,
+          customerEmail,
+          total,
+        },
+      });
+    } catch (error) {
+      console.error("Failed to send admin notification:", error);
+    }
+    
+    // Open WhatsApp
+    const message = encodeURIComponent(`Hi, I've made payment for order ${orderId?.slice(0, 8)}. Amount: ₦${total?.toLocaleString()}. Please confirm.`);
+    const whatsappNumber = "2348144853538";
     window.open(`https://wa.me/${whatsappNumber}?text=${message}`, "_blank");
+    
+    setIsNotifying(false);
     navigate("/");
     toast({
       title: "Thank you!",
@@ -199,9 +223,10 @@ const PaymentInstructions = () => {
               <Button
                 className="flex-1 bg-green-600 hover:bg-green-700"
                 onClick={handlePayed}
+                disabled={isNotifying}
               >
                 <MessageCircle className="h-4 w-4 mr-2" />
-                I've Paid
+                {isNotifying ? "Notifying..." : "I've Paid"}
               </Button>
             </div>
 
